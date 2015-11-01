@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Shutterstock</string>
+
+
+    <string name="sign_up_activity_hint_email">Email</string>
+    <string name="login_activity_hint_username">Username</string>
+    <string name="login_activity_hint_password">Password</string>
+    <string name="login_activity_login">Login</string>
+    <string name="login_activity_no_account">No account yet? Create one</string>
+    <string name="sign_up_already_member">Already a member? Login</string>
+    <string name="sign_up_create_account">Create account</string>
+</resources>
