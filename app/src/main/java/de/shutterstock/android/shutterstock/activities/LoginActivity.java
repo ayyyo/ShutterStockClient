@@ -1,10 +1,12 @@
 package de.shutterstock.android.shutterstock.activities;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.webkit.WebView;
@@ -81,6 +83,7 @@ public class LoginActivity extends AppCompatActivity implements Observer<Shutter
     @Override
     public void onCompleted() {
         hideProgressDialog();
+        startActivity(new Intent(LoginActivity.this, ShutterStockActivity.class));
     }
 
     @Override

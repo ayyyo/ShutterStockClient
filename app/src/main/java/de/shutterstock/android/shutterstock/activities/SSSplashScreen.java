@@ -24,19 +24,22 @@ public class SSSplashScreen extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.splash_screen);
+
+        if (SSSharedPreferences.getOAUTHToken() != null) {
+            startActivity(new Intent(SSSplashScreen.this, ShutterStockActivity.class));
+            finish();
+            return;
+        }
         mSubscription = Observable.timer(2, TimeUnit.SECONDS)
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Action1<Long>() {
-                    @Override
-                    public void call(Long aLong) {
-                        if (SSSharedPreferences.getOAUTHToken() == null) {
-                            startActivity(new Intent(SSSplashScreen.this, LoginActivity.class));
-                        } else {
-
-                        }
-                        finish();
-                    }
-                });
+                               @Override
+                               public void call(Long aLong) {
+                                   startActivity(new Intent(SSSplashScreen.this, LoginActivity.class));
+                                   finish();
+                               }
+                           }
+                );
     }
 
     @Override

@@ -14,6 +14,5 @@ public class User {
     public String language;
     public String email;
     public String customer_id;
-
     public String password;
 }
