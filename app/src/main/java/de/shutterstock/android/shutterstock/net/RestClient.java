@@ -3,21 +3,25 @@ package de.shutterstock.android.shutterstock.net;
 import android.util.Base64;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.squareup.okhttp.Interceptor;
+import com.squareup.okhttp.MediaType;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 import com.squareup.okhttp.ResponseBody;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.util.Collection;
-import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import de.shutterstock.android.shutterstock.content.model.ShutterStockAccessToken;
 import de.shutterstock.android.shutterstock.content.model.ShutterStockError;
+import de.shutterstock.android.shutterstock.utilities.RxJavaUtils;
 import de.shutterstock.android.shutterstock.utilities.SSSharedPreferences;
-import retrofit.Call;
 import retrofit.Converter;
 import retrofit.GsonConverterFactory;
 import retrofit.Retrofit;
@@ -29,51 +33,94 @@ import retrofit.RxJavaCallAdapterFactory;
 public class RestClient {
 
 
-    private static class BasicAuthInterceptor implements Interceptor {
+    public static class BasicAuthInterceptor implements Interceptor {
 
         @Override
         public Response intercept(Chain chain) throws IOException {
             final Request original = chain.request();
+            final String authorizationString = SSSharedPreferences.getOAUTHToken() == null
+                    ? "Basic " + BASIC_AUTH_ENCODED
+                    : "Bearer " + SSSharedPreferences.getOAUTHToken();
             final Request request = original.newBuilder()
-                    // .header("Authorization", "Basic " + BASIC_AUTH_ENCODED)
-                    .addHeader("Authorization", "Bearer " + SSSharedPreferences.getOAUTHToken())
+                    .addHeader("Authorization", authorizationString)
                     .method(original.method(), original.body()).build();
-            Collection<List<String>> hs = request.headers().toMultimap().values();
-            for (List<String> h : hs) {
-                for (String s : h) {
-                    Log.e("SSS", " " + s  + " request " + request);
-                }
-            }
             return chain.proceed(request);
         }
     }
 
-    private static class OAUTHInterceptor implements Interceptor {
+    public static class OAUTHInterceptor implements Interceptor {
 
         private static final String LOG_TAG = OAUTHInterceptor.class.getSimpleName();
+        private AtomicBoolean isRefreshed = new AtomicBoolean(false);
+        private Semaphore mSemaphore = new Semaphore(1);
+        private AtomicInteger mCounter = new AtomicInteger();
 
         @Override
         public Response intercept(Chain chain) throws IOException {
             final Request original = chain.request();
             final Response response = chain.proceed(chain.request());
             if (response.code() == 401) {
-                Log.w(LOG_TAG, "401 " + original);
-                ShutterStockAccessToken.RefreshTokenRequest refresh
-                        = new ShutterStockAccessToken.RefreshTokenRequest(SSSharedPreferences.getRefreshToken());
-                Call<ShutterStockAccessToken> call
-                        = getApiDescriptor().refreshAccessToken(ACCESS_TOKEN_URL, refresh);
-                retrofit.Response<ShutterStockAccessToken> tokenResponse = call.execute();
-                if (tokenResponse == null) {
-                    return null;
+                Log.w(LOG_TAG, "response code: " + response.code());
+                mCounter.incrementAndGet();
+                while (!isRefreshed.get()) {
+                    try {
+                        Log.w(LOG_TAG, "401, entering: " + Thread.currentThread().getName() + " original " + original);
+                        mSemaphore.acquire();
+                        if (isRefreshed.get()) {
+                            Log.w(LOG_TAG, "refreshed: " + Thread.currentThread().getName() + " continues ");
+                            continue;
+                        }
+                        isRefreshed.set(refreshOAUTHToken(chain));
+                        if (!isRefreshed.get()) {
+                            return null;
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        if (!isRefreshed.get()) {
+                            return null;
+                        }
+                    } finally {
+                        mSemaphore.release();
+                        if (mCounter.getAndDecrement() <= 0 && isRefreshed.get()) {
+                            isRefreshed.set(false);
+                        }
+                        Log.w(LOG_TAG, "finally. Threads still waiting: " + mCounter.intValue());
+                    }
                 }
-                SSSharedPreferences.setRefreshToken(tokenResponse.body().refresh_token);
-                SSSharedPreferences.setOAUTHToken(tokenResponse.body().access_token);
-                final Request.Builder requestBuilder = original.newBuilder()
-                        .addHeader("Authorization", "Bearer " + tokenResponse.body().access_token)
-                        .method(original.method(), original.body());
-                return chain.proceed(requestBuilder.build());
+                final Request request = new Request.Builder()
+                        .url(original.url())
+                        .addHeader("Authorization", "Bearer " + SSSharedPreferences.getOAUTHToken())
+                        .method(original.method(), original.body()).build();
+                Log.w(LOG_TAG, "401, executing next request: " + request);
+                return chain.proceed(request);
             }
             return response;
+        }
+
+        private boolean refreshOAUTHToken(Chain chain) throws IOException {
+            if (RxJavaUtils.isUiThread()) {
+                Log.w(LOG_TAG, "chain " + chain + " called on ui thread");
+                //return false;
+            }
+            Log.w(LOG_TAG, "401 " + Thread.currentThread().getName() + " is refreshing the oauth token " + (SSSharedPreferences.getRefreshToken()));
+            ShutterStockAccessToken.RefreshTokenRequest refresh
+                    = new ShutterStockAccessToken.RefreshTokenRequest(SSSharedPreferences.getRefreshToken());
+            final Gson gson = new Gson();
+            Request request = new Request.Builder()
+                    .post(RequestBody.create(MediaType.parse("application/json"), gson.toJson(refresh)))
+                    .url(ACCESS_TOKEN_URL).build();
+            Response tokenResponse = chain.proceed(request);
+            if (tokenResponse == null) {
+                return false;
+            }
+            ShutterStockAccessToken token = gson.fromJson(tokenResponse.body().string(), ShutterStockAccessToken.class);
+            if (token == null) {
+                return false;
+            }
+            Log.w(LOG_TAG, "401 " + token.access_token + " new token");
+            SSSharedPreferences.setRefreshToken(token.refresh_token);
+            SSSharedPreferences.setOAUTHToken(token.access_token);
+            return true;
         }
     }
 
