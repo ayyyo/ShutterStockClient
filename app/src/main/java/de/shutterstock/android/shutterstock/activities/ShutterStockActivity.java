@@ -1,11 +1,12 @@
 package de.shutterstock.android.shutterstock.activities;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -17,13 +18,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.shutterstock.android.shutterstock.R;
-import de.shutterstock.android.shutterstock.ShutterStockApplication;
 import de.shutterstock.android.shutterstock.fragments.CategoryFragment;
+import de.shutterstock.android.shutterstock.fragments.RecentFragment;
 
 public class ShutterStockActivity extends AppCompatActivity {
 
 
-    static class MainFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
+    static class MainFragmentStatePagerAdapter extends FragmentPagerAdapter {
 
         static class FragmentModel {
             String mTitle;
@@ -31,13 +32,21 @@ public class ShutterStockActivity extends AppCompatActivity {
             Bundle bundle;
         }
 
+        final Activity mActivity;
+        final FragmentManager mManager;
         final List<FragmentModel> mDataSet;
         final SparseArray<Fragment> mFragmentCache;
 
-        public MainFragmentStatePagerAdapter(FragmentManager fm, List<FragmentModel> dataSet) {
-            super(fm);
+        public MainFragmentStatePagerAdapter(AppCompatActivity activity, List<FragmentModel> dataSet) {
+            super(activity.getSupportFragmentManager());
+            mActivity = activity;
             mDataSet = dataSet;
+            mManager = activity.getSupportFragmentManager();
             mFragmentCache = new SparseArray<>();
+        }
+
+        private String makeFragmentName(int viewId, int index) {
+            return "android:switcher:" + viewId + ":" + index;
         }
 
         @Override
@@ -45,7 +54,7 @@ public class ShutterStockActivity extends AppCompatActivity {
             Fragment fragment;
             if ((fragment = mFragmentCache.get(position)) == null) {
                 final FragmentModel item = mDataSet.get(position);
-                fragment = Fragment.instantiate(ShutterStockApplication.getContext(),
+                fragment = Fragment.instantiate(mActivity,
                         item.mFragment.getName(), item.bundle);
                 mFragmentCache.put(position, fragment);
             }
@@ -99,7 +108,28 @@ public class ShutterStockActivity extends AppCompatActivity {
         model.mTitle = getString(R.string.categories);
         model.bundle = new Bundle();
         dataset.add(model);
-        viewPager.setAdapter(mAdapter = new MainFragmentStatePagerAdapter(getSupportFragmentManager(), dataset));
+
+        model = new MainFragmentStatePagerAdapter.FragmentModel();
+        model.mFragment = RecentFragment.class;
+        model.mTitle = getString(R.string.recent);
+        model.bundle = new Bundle();
+        dataset.add(model);
+
+        model = new MainFragmentStatePagerAdapter.FragmentModel();
+        model.mFragment = RecentFragment.class;
+        model.mTitle = getString(R.string.random);
+        model.bundle = new Bundle();
+        model.bundle.putString(RecentFragment.SORTING_KEY, "random");
+        dataset.add(model);
+
+        model = new MainFragmentStatePagerAdapter.FragmentModel();
+        model.mFragment = RecentFragment.class;
+        model.mTitle = getString(R.string.popular);
+        model.bundle = new Bundle();
+        model.bundle.putString(RecentFragment.SORTING_KEY, "popular");
+        dataset.add(model);
+
+        viewPager.setAdapter(mAdapter = new MainFragmentStatePagerAdapter(this, dataset));
     }
 
 

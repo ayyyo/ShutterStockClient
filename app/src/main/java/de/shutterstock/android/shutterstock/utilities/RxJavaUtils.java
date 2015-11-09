@@ -23,6 +23,9 @@ public class RxJavaUtils {
         return subscription;
     }
 
+    public static boolean isUiThread() {
+        return Looper.getMainLooper() == Looper.myLooper();
+    }
 
     public static void checkUiThread() {
         if (Looper.getMainLooper() != Looper.myLooper()) {

@@ -32,7 +32,7 @@ public class SSSharedPreferences {
     }
 
     public static void setOAUTHToken(final String token) {
-        sEditor.putString(SSC_OAUTH_TOKEN_KEY, token).apply();
+        sEditor.putString(SSC_OAUTH_TOKEN_KEY, token).commit();
     }
 
     public static String getRefreshToken() {
@@ -40,6 +40,6 @@ public class SSSharedPreferences {
     }
 
     public static void setRefreshToken(final String token) {
-        sEditor.putString(SSC_REFRESH_TOKEN_KEY, token).apply();
+        sEditor.putString(SSC_REFRESH_TOKEN_KEY, token).commit();
     }
 }

@@ -1,6 +1,8 @@
 package de.shutterstock.android.shutterstock.fragments;
 
 import android.os.Bundle;
+import android.os.Looper;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.view.View;
 
@@ -17,8 +19,10 @@ import rx.subscriptions.CompositeSubscription;
 public abstract class RxJavaFragment<T> extends Fragment implements Observer<T> {
 
     final protected CompositeSubscription mSubscriptions = new CompositeSubscription();
+    protected T mResponse;
 
     protected abstract Observable<T> getObservable();
+
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -35,13 +39,50 @@ public abstract class RxJavaFragment<T> extends Fragment implements Observer<T> 
         mSubscriptions.add(observable
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.newThread())
+                .unsubscribeOn(Schedulers.computation())
                 .subscribe(this));
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mSubscriptions.unsubscribe();
+        if (mSubscriptions != null) {
+            mSubscriptions.unsubscribe();
+        }
+    }
+
+
+
+    @Override
+    public void onError(Throwable e) {
+        showSnackBar(e.getMessage() + " ");
+    }
+
+    private void showSnackBar(final int message) {
+        showSnackBar(getString(message));
+    }
+
+    private void showSnackBar(final String message) {
+        if (!isAdded() || !isResumed() || isRemoving() || getActivity() == null) {
+            return;
+        }
+        View view;
+        if ((view = getActivity().findViewById(R.id.shutterstock_activity_container)) == null) {
+            view = getActivity().findViewById(android.R.id.content);
+        }
+        if (view != null) {
+            final Snackbar snackbar = Snackbar.make(view, message, Snackbar.LENGTH_SHORT);
+            if (Looper.getMainLooper() == Looper.myLooper()) {
+                snackbar.show();
+            } else {
+                view.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        snackbar.show();
+                    }
+                });
+            }
+        }
     }
 
     @Override

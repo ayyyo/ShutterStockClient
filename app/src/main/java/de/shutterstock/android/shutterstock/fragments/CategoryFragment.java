@@ -22,7 +22,7 @@ import rx.subscriptions.CompositeSubscription;
 /**
  * Created by emanuele on 01.11.15.
  */
-public class CategoryFragment extends RxJavaFragment<PagedResponse<Category>> {
+public class CategoryFragment extends RxJavaPagedFragment<Category> {
 
     private static class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder> {
 
@@ -95,13 +95,13 @@ public class CategoryFragment extends RxJavaFragment<PagedResponse<Category>> {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.category_fragment_layout, container, false);
+        return inflater.inflate(R.layout.recyclerview_fragment_layout, container, false);
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mRecyclerView = (RecyclerView) view.findViewById(R.id.category_recycler_view);
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
         mRecyclerView.setAdapter(mAdapter = new CategoryAdapter());
@@ -114,6 +114,7 @@ public class CategoryFragment extends RxJavaFragment<PagedResponse<Category>> {
 
     @Override
     public void onError(Throwable e) {
+        super.onError(e);
         e.printStackTrace();
     }
 
@@ -131,11 +132,4 @@ public class CategoryFragment extends RxJavaFragment<PagedResponse<Category>> {
         return RestClient.getApiDescriptor().getCategories();
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (mSubscriptions != null) {
-            mSubscriptions.unsubscribe();
-        }
-    }
 }
