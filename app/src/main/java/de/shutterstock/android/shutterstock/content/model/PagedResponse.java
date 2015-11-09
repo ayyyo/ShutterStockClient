@@ -7,13 +7,27 @@ import java.util.List;
  */
 public class PagedResponse<T> {
 
-    public int page;
-    public int per_page;
-    public int total_count;
+    private int page;
+    private int per_page;
+    private int total_count;
+    public String search_id;
 
     private List<T> data;
 
     public List<T> getData() {
         return data;
+    }
+
+    public boolean isLastPage() {
+        return page *
+                per_page >= total_count;
+    }
+
+    public boolean isFirstPage() {
+        return page == 1;
+    }
+
+    public int getCurrentPage() {
+        return page;
     }
 }
