@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,45 +24,14 @@ import rx.Observable;
  */
 public class RecentFragment extends RxJavaPagedFragment<Image> {
 
-    private final class SSGOnScrollListener extends RecyclerView.OnScrollListener {
-
-        private RecyclerView.LayoutManager mLayoutManager;
-
-        SSGOnScrollListener(RecyclerView.LayoutManager layoutManager) {
-            mLayoutManager = layoutManager;
-        }
-
-        @Override
-        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-
-            mVisibleItemCount = mLayoutManager.getChildCount();
-            mTotalItemCount = mLayoutManager.getItemCount();
-            //mPastVisibleItems = mLayoutManager.findFirstVisibleItemPosition();
-
-            if (mResponse != null) {
-                if (mResponse.isLastPage() || isAlreadyLoading) {
-                    return;
-                }
-
-                if ((mVisibleItemCount + mPastVisibleItems + THRESHOLD) >= mTotalItemCount) {
-                    isAlreadyLoading = true;
-                    loadNextPage();
-                }
-            }
-        }
-    }
 
     public static final String SORTING_KEY = "SORTING_KEY";
-    private static final int THRESHOLD = 8;
 
-    private int mPastVisibleItems;
-    private int mVisibleItemCount;
-    private int mTotalItemCount;
-    private volatile boolean isAlreadyLoading = false;
     private RecyclerView mRecyclerView;
     private ImageAdapter mAdapter;
 
     private String mSorting;
+    private GridLayoutManager mGridLayoutManager;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,8 +50,9 @@ public class RecentFragment extends RxJavaPagedFragment<Image> {
         super.onViewCreated(view, savedInstanceState);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
         mRecyclerView.setHasFixedSize(true);
-        mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2, LinearLayoutManager.VERTICAL, false));
+        mRecyclerView.setLayoutManager(mGridLayoutManager = new GridLayoutManager(getActivity(), 2, LinearLayoutManager.VERTICAL, false));
         mRecyclerView.setAdapter(mAdapter = new ImageAdapter());
+        mRecyclerView.addOnScrollListener(new EndlessScrollListener(mGridLayoutManager, this));
     }
 
     @Override
@@ -92,16 +63,19 @@ public class RecentFragment extends RxJavaPagedFragment<Image> {
 
     protected HashMap<String, String> getSearchFilters() {
         HashMap<String, String> query = new HashMap<>();
-        query.put("page", mResponse == null ? String.valueOf(1) : String.valueOf(mResponse.getCurrentPage() + 1));
+        final String page = mResponse == null ? String.valueOf(1) : String.valueOf(mResponse.getCurrentPage() + 1);
+        Log.i(getClass().getSimpleName(), " loading page " + page);
+        query.put("page", page);
         query.put("per_page", "30");
         query.put("view", "full");
-        query.put("sort", mSorting );
+        query.put("sort", mSorting);
         return query;
     }
 
 
     @Override
     public void onNext(PagedResponse<Image> image) {
+        super.onNext(image);
         if (mAdapter != null) {
             mAdapter.addAll(image.getData());
         }
