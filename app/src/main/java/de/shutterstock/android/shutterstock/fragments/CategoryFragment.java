@@ -107,10 +107,6 @@ public class CategoryFragment extends RxJavaPagedFragment<Category> {
         mRecyclerView.setAdapter(mAdapter = new CategoryAdapter());
     }
 
-    @Override
-    public void onCompleted() {
-
-    }
 
     @Override
     public void onError(Throwable e) {
@@ -120,6 +116,7 @@ public class CategoryFragment extends RxJavaPagedFragment<Category> {
 
     @Override
     public void onNext(PagedResponse<Category> categories) {
+        super.onNext(categories);
         if (mAdapter == null) {
             mAdapter = new CategoryAdapter();
             mRecyclerView.setAdapter(mAdapter);
