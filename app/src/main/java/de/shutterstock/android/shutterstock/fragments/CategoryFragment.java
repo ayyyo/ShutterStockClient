@@ -87,8 +87,6 @@ public class CategoryFragment extends RxJavaPagedFragment<Category> {
         }
     }
 
-
-    private RecyclerView mRecyclerView;
     private CategoryAdapter mAdapter;
     private CompositeSubscription mSubscriptions = new CompositeSubscription();
 
@@ -101,7 +99,6 @@ public class CategoryFragment extends RxJavaPagedFragment<Category> {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
         mRecyclerView.setHasFixedSize(true);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
         mRecyclerView.setAdapter(mAdapter = new CategoryAdapter());

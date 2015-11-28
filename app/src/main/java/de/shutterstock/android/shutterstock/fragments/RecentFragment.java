@@ -6,9 +6,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 
 import java.util.HashMap;
 
@@ -27,7 +25,6 @@ public class RecentFragment extends RxJavaPagedFragment<Image> {
 
     public static final String SORTING_KEY = "SORTING_KEY";
 
-    private RecyclerView mRecyclerView;
     private ImageAdapter mAdapter;
 
     private String mSorting;
@@ -39,11 +36,6 @@ public class RecentFragment extends RxJavaPagedFragment<Image> {
         mSorting = getArguments() == null ? "newest" : getArguments().getString(SORTING_KEY);
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.recyclerview_fragment_layout, container, false);
-    }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
