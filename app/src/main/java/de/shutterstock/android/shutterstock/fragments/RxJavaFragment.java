@@ -97,4 +97,8 @@ public abstract class RxJavaFragment<T> extends Fragment implements Observer<T> 
         }
         view.setVisibility(visibility);
     }
+
+    public boolean isWrongStatus() {
+        return !isAdded() || isRemoving() || isDetached();
+    }
 }
