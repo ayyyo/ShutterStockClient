@@ -6,6 +6,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,14 +26,15 @@ public abstract class RxJavaPagedFragment<T> extends RxJavaFragment<PagedRespons
         private final RecyclerView.LayoutManager mLayoutManager;
         private final WeakReference<OnLoadNextPage> mListener;
 
-        private int mPastVisibleItems;
+        private int mFirstVisibleItem;
         private int mVisibleItemCount;
         private int mTotalItemCount;
 
+        private int[] mInto;
 
         public EndlessScrollListener(RecyclerView.LayoutManager layoutManager, final OnLoadNextPage loadNextPage) {
             mLayoutManager = layoutManager;
-            mListener = new WeakReference<OnLoadNextPage>(loadNextPage);
+            mListener = new WeakReference<>(loadNextPage);
         }
 
         @Override
@@ -41,14 +43,17 @@ public abstract class RxJavaPagedFragment<T> extends RxJavaFragment<PagedRespons
             mVisibleItemCount = mLayoutManager.getChildCount();
             mTotalItemCount = mLayoutManager.getItemCount();
             if (mLayoutManager instanceof LinearLayoutManager) {
-                mPastVisibleItems = ((LinearLayoutManager) mLayoutManager).findFirstVisibleItemPosition();
+                mFirstVisibleItem = ((LinearLayoutManager) mLayoutManager).findFirstVisibleItemPosition();
             } else if (mLayoutManager instanceof GridLayoutManager) {
-                mPastVisibleItems = ((LinearLayoutManager) mLayoutManager).findFirstVisibleItemPosition();
+                mFirstVisibleItem = ((LinearLayoutManager) mLayoutManager).findFirstVisibleItemPosition();
+            } else if (mLayoutManager instanceof StaggeredGridLayoutManager) {
+                mInto = ((StaggeredGridLayoutManager) mLayoutManager).findFirstVisibleItemPositions(mInto);
+                mFirstVisibleItem = mInto[0];
             } else {
                 return;
             }
 
-            if ((mVisibleItemCount + mPastVisibleItems + THRESHOLD) >= mTotalItemCount) {
+            if ((mVisibleItemCount + mFirstVisibleItem + THRESHOLD) >= mTotalItemCount) {
                 if (mListener != null && mListener.get() != null) {
                     mListener.get().onLoadNext();
                 }
