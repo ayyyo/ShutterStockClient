@@ -2,13 +2,15 @@ package de.shutterstock.android.shutterstock.fragments;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
 
 import java.util.HashMap;
+import java.util.Random;
 
 import de.shutterstock.android.shutterstock.R;
 import de.shutterstock.android.shutterstock.adapters.ImageAdapter;
@@ -24,11 +26,13 @@ public class RecentFragment extends RxJavaPagedFragment<Image> {
 
 
     public static final String SORTING_KEY = "SORTING_KEY";
+    private static final int GRID_COLUMN_COUNT = 3;
 
     private ImageAdapter mAdapter;
 
     private String mSorting;
-    private GridLayoutManager mGridLayoutManager;
+    private RecyclerView.LayoutManager mLayoutManager;
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -38,13 +42,40 @@ public class RecentFragment extends RxJavaPagedFragment<Image> {
 
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, @Nullable final Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
+        mRecyclerView.setBackgroundColor(ContextCompat.getColor(getActivity(), R.color.accent_material_light));
         mRecyclerView.setHasFixedSize(true);
-        mRecyclerView.setLayoutManager(mGridLayoutManager = new GridLayoutManager(getActivity(), 2, LinearLayoutManager.VERTICAL, false));
+        mRecyclerView.setLayoutManager(mLayoutManager = new GridLayoutManager(getActivity(), GRID_COLUMN_COUNT));
         mRecyclerView.setAdapter(mAdapter = new ImageAdapter());
-        mRecyclerView.addOnScrollListener(new EndlessScrollListener(mGridLayoutManager, this));
+        mRecyclerView.addOnScrollListener(new EndlessScrollListener(mLayoutManager, this));
+
+        ((GridLayoutManager) mLayoutManager).setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            final SparseArray<Integer> mSparseArray = new SparseArray<Integer>();
+            final Random mRandom = new Random();
+
+            @Override
+            public int getSpanSize(int position) {
+                int span;
+                if (mSparseArray.get(position) == null) {
+                    span = 1 + mRandom.nextInt(GRID_COLUMN_COUNT);
+                    if (span == GRID_COLUMN_COUNT) {
+                        mSparseArray.put(position, span);
+                        return span;
+                    }
+                    int tmpSpan = span;
+                    int i = position;
+                    while (tmpSpan <= GRID_COLUMN_COUNT) {
+                        mSparseArray.put(i++, span);
+                        int nexRand = GRID_COLUMN_COUNT - tmpSpan == 0 ? 1 : GRID_COLUMN_COUNT - tmpSpan;
+                        span = 1 + mRandom.nextInt(nexRand);
+                        tmpSpan += span;
+                    }
+                }
+                return mSparseArray.get(position);
+            }
+        });
     }
 
     @Override
