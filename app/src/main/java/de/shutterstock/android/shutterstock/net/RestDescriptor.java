@@ -4,6 +4,7 @@ package de.shutterstock.android.shutterstock.net;
 import java.util.Map;
 
 import de.shutterstock.android.shutterstock.content.model.Category;
+import de.shutterstock.android.shutterstock.content.model.Contributor;
 import de.shutterstock.android.shutterstock.content.model.Image;
 import de.shutterstock.android.shutterstock.content.model.PagedResponse;
 import de.shutterstock.android.shutterstock.content.model.ShutterStockAccessToken;
@@ -12,6 +13,7 @@ import retrofit.Call;
 import retrofit.http.Body;
 import retrofit.http.GET;
 import retrofit.http.POST;
+import retrofit.http.Path;
 import retrofit.http.QueryMap;
 import retrofit.http.Url;
 import rx.Observable;
@@ -37,8 +39,9 @@ public interface RestDescriptor {
     @GET("images/search")
     Observable<PagedResponse<Image>> getImages(@QueryMap Map<String, String> queryMap);
 
+    @GET("contributors/{contributorId}")
+    Observable<Contributor> getContributor(@Path("contributorId") final String contributorId);
+
     @POST
     Call<ShutterStockAccessToken> refreshAccessToken(@Url String url, @Body ShutterStockAccessToken.RefreshTokenRequest filters);
-
-
 }

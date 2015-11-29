@@ -14,4 +14,6 @@
     <string name="recent">Recent</string>
     <string name="popular">Popular</string>
     <string name="random">Random</string>
+    <string name="buy_it">buy it!</string>
+    <string name="location">Location: %1$s</string>
 </resources>
